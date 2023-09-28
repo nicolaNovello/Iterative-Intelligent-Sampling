@@ -4,65 +4,27 @@ import torchvision.transforms as transforms
 from classes import *
 
 
-def run_test_lstm(env, RANDOM_ACTION_TEST, cluster_letter, policy_net, dqn_hyperparams, k, sam_length, emb_size, bs, pl):
-    letter_num_dict = {"A": 1, "B": 10, "C": 100, "D": 1000, "E": 10000, "F": 100000}
+def run_test_lstm(env, cluster_letter, policy_net, dqn_hyperparams, k):
     for num_episode in range(3):
         episode_reward = 0
         hidden = None
-        #startingPoint = None
-        #state = env.reset(test=True, pt=None)  # pt=dqn_hyperparams["starting_point_dqn_test"][cluster_letter]
         last_observation = env.reset(test=True, pt=None)
         action_space_dim = env.action_space_dim
         last_action = 0
         done = False
-        if RANDOM_ACTION_TEST:
-            random.seed(letter_num_dict[cluster_letter])
-        else:
-            random.seed(0)
+        random.seed(0)
         while not done:
-            if RANDOM_ACTION_TEST:
-                action = torch.tensor([random.randint(0, 2)])
-            else:
-                action, hidden = select_action_lstm(policy_net, torch.tensor(last_observation).float().view(1, 1, -1),
-                                            F.one_hot(torch.tensor(last_action), action_space_dim).view(1, 1,-1).float(),
-                                                    hidden, num_episode, ACTION_SELECTION=0, temperature=0, EPS_END=0)
-                #action, hidden = policy_net.act(torch.tensor(last_observation).float().view(1, 1, -1),
-                #                                     F.one_hot(torch.tensor(last_action), action_space_dim).view(1, 1,
-                #                                                                                                 -1).float(),
-                #                                     hidden=hidden, epsilon=0)
+            action, hidden = select_action_lstm(policy_net, torch.tensor(last_observation).float().view(1, 1, -1),
+                                        F.one_hot(torch.tensor(last_action), action_space_dim).view(1, 1,-1).float(),
+                                                hidden, num_episode, ACTION_SELECTION=0, temperature=0, EPS_END=0)
+
             observation, reward, done = env.play_step(action)
             episode_reward += reward
             last_observation = observation
             last_action = action
     # Save last position of the agent as starting point of the next trajectory (for each cluster)
-    save_display_path = "NetsImages/OptimalPaths/cluster{}_iter{}_sampleLength{}_embSize{}_bs{}_pl{}_random{}.svg".format(cluster_letter, k,
-                                                                        sam_length, emb_size, bs, pl, RANDOM_ACTION_TEST)
+    save_display_path = "NetsImages/OptimalPaths/cluster{}_iter{}.jpeg".format(cluster_letter, k)
     env.save_display(save_display_path)
-    ##### QUI
-    dqn_hyperparams["starting_point_dqn_test"][cluster_letter] = env.return_snake()[-1]  # env.return_snake()[0] SAREBBE L ULTIMO PUNTO IN CUI PASSA, MA DEVO PRIMA FAR SI CHE NON SIA MAI FUORI DAI BORDI!!!
-
-
-def run_test(env, RANDOM_ACTION_TEST, cluster_letter, policy_net, dqn_hyperparams):
-    letter_num_dict = {"A": 1, "B": 10, "C": 100, "D": 1000, "E": 10000, "F": 100000}
-    for num_episode in range(3):
-        episode_reward = 0
-        #startingPoint = None
-        state = env.reset(test=True, pt=None)  # pt=dqn_hyperparams["starting_point_dqn_test"][cluster_letter
-        done = False
-        if RANDOM_ACTION_TEST:
-            random.seed(letter_num_dict[cluster_letter])
-        else:
-            random.seed(0)
-        while not done:
-            if RANDOM_ACTION_TEST:
-                action = torch.tensor([random.randint(0, 2)])
-            else:
-                action = select_action(policy_net, state, num_episode, ACTION_SELECTION=0, temperature=0, EPS_END=0)
-            next_state, reward, done = env.play_step(action)
-            episode_reward += reward
-            state = next_state
-    # Save last position of the agent as starting point of the next trajectory (for each cluster)
-    dqn_hyperparams["starting_point_dqn_test"][cluster_letter] = env.return_snake()[-1]
 
 
 def save_optimal_path(env, env_w, env_h, cluster_letter, coord, lnn_hyperparams, k):

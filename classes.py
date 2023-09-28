@@ -33,7 +33,7 @@ class Direction(Enum):
 class SnakeGameAI:
 
     def __init__(self, cluster_letter, err_cluster_image, coord, localization_model,
-                 scaler_path, starting_point=None, random_test=False, max_steps=40, w=926, h=618):
+                 scaler_path, max_steps=40, w=926, h=618):
         """
         Initialize the environment.
 
@@ -74,7 +74,6 @@ class SnakeGameAI:
         self.observation_space_dim = 13  # The size of the state
         self.action_space_dim = 3  # The number of actions that the agent can do
         self.reset()
-        self.random_test = random_test
 
 
     def reset(self, test=False, pt=None):
@@ -98,17 +97,11 @@ class SnakeGameAI:
         #self.head = Point(int((self.clusterBorders[1] + self.clusterBorders[3]) / 2),
         #                  int((self.clusterBorders[0] + self.clusterBorders[2]) / 2))
         if pt:
-            print("pt: ", pt)
             self.head = Point(int(pt[1][0][0].item()), int(pt[1][0][1].item()))
-            print("head: ", self.head)
         else:
-            #if test:
             self.head = Point(int((self.clusterBorders[1] + self.clusterBorders[3]) / 2),
                               int((self.clusterBorders[0] + self.clusterBorders[2]) / 2))
-            #else:  # randomically initialize the point
-            #    rand_x = random.randint(int(self.clusterBorders[3]), int(self.clusterBorders[1]))
-            #    rand_y = random.randint(int(self.clusterBorders[0]), int(self.clusterBorders[2]))
-            #    self.head = Point(int(rand_x), int(rand_y))
+
         # Reset the snake to the head
         self.snake = [self.head]
         self.iter = 0
@@ -126,7 +119,7 @@ class SnakeGameAI:
     def save_display(self, path):
         pygame.image.save(self.display, path)
 
-    def play_step(self, action, speed=30):  # , episode_length, cluster_letter,
+    def play_step(self, action, speed=30):
         """
         Execute the step of the agent, thus move one step in the environment.
 
@@ -143,7 +136,6 @@ class SnakeGameAI:
         """
 
         # First save the action in the list of old actions (it could be included in the state, to represent the history)
-        #self.last_actions.append(action.item())
         self.last_actions.append(action)
         self.iter += 1
         for event in pygame.event.get():
@@ -163,8 +155,7 @@ class SnakeGameAI:
 
         if self.is_collision(self.head):  # Check if the head did not collide
             game_over = True
-            #print('Borders')
-            reward = -1000 #-1000
+            reward = -1000
             return next_state, torch.tensor([reward], dtype=torch.float32), game_over
         # Check if the episode lasted for too many steps
         if self.iter > self.max_steps:
@@ -175,14 +166,11 @@ class SnakeGameAI:
         weight = 1
         for i in range(len(self.places) - 1):
             if self.head == self.places[i]:
-                reward -= 120 * weight   # 120
+                reward -= 120 * weight
                 weight += 1
         if weight > 2:
             return next_state, torch.tensor([reward], dtype=torch.float32), game_over
 
-        #print("instant_error: ", instant_error)
-        #print("np.sum(self.prediction_errors): ", np.sum(self.prediction_errors))
-        #print("np.mean(self.prediction_errors): ", np.mean(self.prediction_errors))
         reward += 1 * instant_error + np.sum(self.prediction_errors)/1000
 
         self._update_ui(self.err_cluster_image)  # , episode_length, cluster_letter)
@@ -278,24 +266,14 @@ class SnakeGameAI:
                 Size of the rectangle with which the agent is represented in the image
         """
 
-        # rgb colors
-        WHITE = (255, 255, 255)
-        RED = (200, 0, 0)
         CUSTOM = (200, 100, 200)
-        BLUE1 = (0, 0, 255)
-        BLUE2 = (0, 100, 255)
         BLACK = (0, 0, 0)
         self.display.blit(err_cluster_image, (0, 0))  # Draw one image onto one other
         draw_cluster_borders(self.display)
         for pt in self.snake:
-            #pygame.draw.rect(self.display, CUSTOM,
-            #                 pygame.Rect(pt.x - block_size / 2, pt.y - block_size / 2, block_size, block_size))
-            #pygame.draw.rect(self.display, BLACK,
-            #                 pygame.Rect(pt.x - block_size / 2, pt.y - block_size / 2, block_size, block_size), width=2)
             pygame.draw.circle(self.display, CUSTOM, (pt.x, pt.y), 8)
             pygame.draw.circle(self.display, BLACK, (pt.x, pt.y), 8, 2)
         pygame.display.flip()  # Update
-        #pygame.image.save(self.display, "screenshot_cluster{}_step{}.jpeg".format(cluster_letter, episode_length))
 
     def _move(self, action, action_step_length=25):
         """
@@ -341,14 +319,7 @@ class SnakeGameAI:
             y += action_step_length
         elif self.direction == Direction.UP_S:
             y -= action_step_length
-
-        if self.random_test:
-            if self.is_collision(Point(x, y)):
-                pass
-            else:
-                self.head = Point(x, y)
-        else:
-            self.head = Point(x, y)
+        self.head = Point(x, y)
 
     def get_state(self, action_step_length=25):
         """
@@ -445,14 +416,14 @@ class SnakeGameAI:
             (dir_l and point_d1 in self.snake) or
             (dir_u and point_l1 in self.snake) or
             (dir_d and point_r1 in self.snake),
-            ########################################################################################################
+            ###############################################################################
             # Err value
             err_straight,
             err_right,
             err_left,
         ]
         # Append to the state the history of the prediction errors of the last 5 locations where the agent walked
-        errors_state_list = [0] * 3  # 5
+        errors_state_list = [0] * 3
         for i in range(len(list(self.last_errors))):
             errors_state_list[i] = self.last_errors[i]
         max_tmp = max(errors_state_list)
@@ -460,12 +431,8 @@ class SnakeGameAI:
             errors_state_list_normalized = [el / max_tmp for el in errors_state_list]
         else:
             errors_state_list_normalized = errors_state_list
-
         state.extend(errors_state_list_normalized)
-
-        state.append(np.sum(self.prediction_errors)/1000)  ## PIU O MENO NORMALIZZATA
-        #print("np.sum(self.prediction_errors)/100: ", np.sum(self.prediction_errors)/100)
-        #print("np.mean(self.snake): ", np.mean(self.snake))
+        state.append(np.sum(self.prediction_errors)/1000)
 
         return torch.tensor([state], dtype=torch.float32)
 
@@ -596,8 +563,6 @@ class Net(nn.Module):
             layers.append(activation)
             layers.append(nn.Dropout(dropout_vec[i - 1]))
             layers.append(linear_layers[i])
-        # the * operator to expand the list into positional arguments, because takes
-        # as argument or a sequence or an ordered dictionary
         self.net = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -630,13 +595,11 @@ def split_dataset_clusters(dataset, cluster_borders):
 
     dataset_cluster = []
     for sample in dataset:
-        #print("sample.item(): ", sample)
         x_coordinate = sample[1][0][0].item()
         y_coordinate = sample[1][0][1].item()
         if ((x_coordinate < cluster_borders[1]) and (x_coordinate > cluster_borders[3]) and
                 (y_coordinate < cluster_borders[2]) and (y_coordinate > cluster_borders[0])):
             dataset_cluster.append(sample)
-    #print("dataset finished")
 
     return dataset_cluster
 
@@ -789,7 +752,6 @@ def create_datasets(cluster_letter, lnn_hyperparams, utils_dict):
     # rename the dataset of the cluster as the training dataset
     train_dataset = train_dataset_cluster
     df_train_dataset = pd.DataFrame(columns=["x", "y", "RSSI2", "RSSI3", "RSSI4", "RSSI6"])
-    #df_test_dataset = pd.DataFrame(columns=["x", "y", "RSSI2", "RSSI3", "RSSI4", "RSSI6"])
     # Save the training dataset of the considered cluster. Then it will be updated with the samples collected from
     # the reinforcement learning algorithm
     for i in range(len(train_dataset)):
@@ -826,68 +788,6 @@ def apply_heatmap_on_cluster(super_imposed_img, img, cluster_letter):
     return new_super_imposed_img
 
 
-class ReplayMemory(object):
-
-    def __init__(self, capacity):
-        """
-        Initialize the replay memory as a deque with a certain capacity.
-        When the maximum capacity has been reached, the old elements are discarded and
-        substituted with the new ones.
-
-        Parameter
-        ---------
-        capacity : int
-                Maximum capacity of the replay memory.
-        """
-
-        self.memory = deque(maxlen=capacity)
-
-    def push(self, state, action, next_state, reward):
-        # Add the tuple (state, action, next_state, reward) to the queue
-        self.memory.append((state, action, next_state, reward))
-
-    def sample(self, batch_size):
-        # Here len(self) calls the method __len__ which returns the length of the memory
-        batch_size = min(batch_size, len(self))
-        return random.sample(self.memory, batch_size)  # Randomly select "batch_size" samples
-
-    def __len__(self):
-        return len(self.memory)  # Return the number of samples currently stored in the memory
-
-
-class DQN(nn.Module):
-
-    def __init__(self, state_space_dim, action_space_dim):
-        """
-        Initialize the deep Q network as a fully connected one,
-        to use the state of the environment as input to the neural network.
-
-        Parameters
-        ----------
-        state_space_dim : int
-                Dimension of the state space.
-        action_space_dim : int
-                Dimension of the action space.
-        """
-
-        super().__init__()
-        # Define the generic block which will compose the neural network.
-        def block(in_feat, out_feat):
-            layers = [nn.Linear(in_feat, out_feat)]
-            layers.append(nn.Tanh())
-            return layers
-
-        self.linear = nn.Sequential(
-            *block(state_space_dim, 256),
-            *block(256, 256),
-            nn.Linear(256, action_space_dim)
-        )
-
-    def forward(self, x):
-        x = x.to(device)
-        return self.linear(x)
-
-
 class DRQN(nn.Module):
     def __init__(self, n_actions, state_size, embedding_size):
         super(DRQN, self).__init__()
@@ -900,8 +800,6 @@ class DRQN(nn.Module):
         self.out_layer = nn.Linear(128, n_actions)
 
     def forward(self, observation, action, hidden=None):
-        # Takes observations with shape (batch_size, seq_len, state_size)
-        # Takes one_hot actions with shape (batch_size, seq_len, n_actions)
         action_embedded = self.embedder(action)
         observation = F.relu(self.obs_layer(observation))
         observation = F.relu(self.obs_layer2(observation))
@@ -914,55 +812,8 @@ class DRQN(nn.Module):
         q_values = self.out_layer(lstm_out)
         return q_values, hidden_out
 
-    def act(self, observation, last_action, epsilon, hidden=None):
-        q_values, hidden_out = self.forward(observation, last_action, hidden)
-        if np.random.uniform() > epsilon:
-            action = torch.argmax(q_values).item()
-        else:
-            action = np.random.randint(self.n_actions)
 
-        return action, hidden_out
-
-class ReplayMemory_v2(object):
-
-    def __init__(self, capacity, seq_len):
-        """
-        Initialize the replay memory as a deque with a certain capacity.
-        When the maximum capacity has been reached, the old elements are discarded and
-        substituted with the new ones.
-
-        Parameter
-        ---------
-        capacity : int
-                Maximum capacity of the replay memory.
-        """
-        self.seq_len = seq_len
-        self.memory = deque(maxlen=capacity)
-
-    def push(self, last_action, last_state, reward, action, state, done):
-        # Add the tuple (state, action, next_state, reward) to the queue
-        self.memory.append((last_action, last_state, reward, action, state, done))
-
-    def sample(self, batch_size):
-        # Here len(self) calls the method __len__ which returns the length of the memory
-        batch_size = min(batch_size, len(self))
-        transitions = []
-        for i in range(batch_size):
-            if len(self) - self.seq_len < 0:
-                raise Exception("Reduce seq_len or increase exploration at start.")
-            random_idx = np.random.randint(len(self) - self.seq_len)
-            print("random_idx: ", random_idx)
-            print("self.seq_len: ", self.seq_len)
-            #transitions.append(self.memory[random_idx:random_idx + self.seq_len])
-            transitions.append(collections.deque(itertools.islice(self.memory, random_idx, random_idx+self.seq_len)))
-        #return random.sample(self.memory, batch_size)  # Randomly select "batch_size" samples
-        return transitions
-
-    def __len__(self):
-        return len(self.memory)  # Return the number of samples currently stored in the memory
-
-
-class ExpBuffer():
+class ReplayMemory():    ## CHIAMARLA REPLAY MEMORY
     def __init__(self, max_storage, sample_length):
         self.max_storage = max_storage
         self.sample_length = sample_length
@@ -996,12 +847,8 @@ class ExpBuffer():
             if self.filled - seq_len < 0:
                 raise Exception("Reduce seq_len or increase exploration at start.")
             start_idx = np.random.randint(self.filled - seq_len)
-            # print(self.filled)
-            # print(start_idx)
             last_act, last_obs, act, rew, obs, done = zip(*self.storage[start_idx:start_idx + seq_len])
             last_actions.append(list(last_act))
-            #print("last_obs: ", last_obs)
-            #print("last_obs.numpy(): ", last_obs.numpy())
             last_observations.append(last_obs)
             actions.append(list(act))
             rewards.append(list(rew))
@@ -1011,7 +858,6 @@ class ExpBuffer():
         return torch.tensor(last_actions), torch.tensor(last_observations, dtype=torch.float32), \
                torch.tensor(actions), torch.tensor(rewards).float(), \
                torch.tensor(observations, dtype=torch.float32), torch.tensor(dones)
-
 
 
 def update_step(policy_net, target_net, replay_mem, gamma, optimizer, loss_fn, batch_size):
@@ -1052,9 +898,7 @@ def update_step(policy_net, target_net, replay_mem, gamma, optimizer, loss_fn, b
     reward_batch = torch.cat(batch.reward)
     # Compute Q(s_t, a_t)
     policy_net.train()
-    #print("state_batch: ", state_batch)
-    #print("action_batch: ", action_batch)
-    state_action_values = policy_net(state_batch).gather(1, action_batch)  # MA STO CALCOLANDO SUL MOMENTO, NON DOVREI INVECE SALVARE STEP DOPO STEP IL VALORE DELL'ACTION VALUE FUCNTION?
+    state_action_values = policy_net(state_batch).gather(1, action_batch)
     # Now we have to compute the value of r + max_a[Q(s_{t+1}, a_{t+1})]
     next_state_values = torch.zeros(batch_size, device=device)
     with torch.no_grad():
@@ -1123,8 +967,6 @@ def select_action_lstm(net, state, action, hidden, steps_done, ACTION_SELECTION,
             net.eval()
             net_out, hidden = net(state, action, hidden)
 
-        #print("net_out.shape: ", net_out.shape)
-        #print("net_out.shape: ", net_out)
         # Apply softmax
         temperature = max(temperature, 1e-8)  # set a minimum to the temperature for numerical stability
         softmax_out = nn.functional.softmax(net_out[0][0] / temperature, dim=0).cpu().numpy()  # prima di LSTM era solo net_out[0]
@@ -1163,93 +1005,3 @@ def select_action_lstm(net, state, action, hidden, steps_done, ACTION_SELECTION,
             action = best_action
         return torch.tensor([[action]], device=device, dtype=torch.long), hidden
 
-
-def select_action(net, state, steps_done, ACTION_SELECTION, temperature, EPS_END=0, EPS_DECAY=600, EPS_START=1):
-    """
-    ACTION_SELECTION is:
-        - 0 -> fixed epsilon greedy algorithm
-        - 1 -> epsilon greedy with decay
-        - 2 -> softmax.
-
-        Note: The state is already a tensor.
-
-        Parameters
-        ----------
-        net : DQN
-                Policy net.
-        state : list
-                State.
-        steps_done : int
-                Number of episodes used inside the training, used to compute
-                    the decay for the epsilon greedy policy with decay.
-        ACTION_SELECTION : int
-                Select the type of policy that is used.
-        temperature : float
-                Temperature parameter for the softmax policy.
-        EPS_END : float
-                Epsilon parameter for the epsilon greedy policies.
-        EPS_DECAY : float
-                Constant which tunes the decay curve for the epsilon greedy policy with decay.
-        EPS_START: float
-                Epsilon parameter for the epsilon greedy policies.
-
-        Returns
-        -------
-        action : int
-                Action chosen from the selected policy.
-    """
-
-    # Choose the softmax policy
-    if ACTION_SELECTION == 2:
-        if temperature < 0:
-            raise Exception('The temperature value must be >= 0 ')
-
-        # If the temperature is 0, just select the greedy action using the eps-greedy policy with (fixed) epsilon = 0
-        if temperature == 0:
-            # The parameters "steps_done" and "temperature" are not used in the epsilon greedy policy
-            return select_action(net, state, 0, 0, 0, EPS_END=0)  # greedy choice
-
-        # Evaluate the network output from the current state -> Expected return from all the actions
-        with torch.no_grad():
-            net.eval()
-            net_out = net(state)
-
-        #print("net_out.shape: ", net_out.shape)
-        #print("net_out.shape: ", net_out)
-        # Apply softmax
-        temperature = max(temperature, 1e-8)  # set a minimum to the temperature for numerical stability
-        softmax_out = nn.functional.softmax(net_out[0] / temperature, dim=0).cpu().numpy()  # prima di LSTM era solo net_out[0]
-        #print("softmax_out: ", softmax_out)
-        # Sample the action using softmax output as pdf
-        all_possible_actions = np.arange(0, softmax_out.shape[-1])
-        # this samples a random element from "all_possible_actions" with the probability distribution p
-        action = np.random.choice(all_possible_actions, p=softmax_out)
-        #print("action: ", action)
-
-        return torch.tensor([[action]], device=device, dtype=torch.long)
-
-    else:
-        # Selects an action according to epsilon greedy policy. The probability of
-        # choosing a random action will start at EPS_START and will decay exponentially
-        # towards EPS_END.
-        # This implies exploration at the beginning and more greedy actions at the end of the training.
-        if ACTION_SELECTION == 1:  # Epsilon greedy policy with decay
-            epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY)
-        else:  # epsilon greedy policy
-            epsilon = EPS_END
-        with torch.no_grad():
-            net.eval()
-            net_out = net(state)
-
-        best_action = int(net_out.argmax())
-        # Get the number of possible actions
-        action_space_dim = net_out.shape[-1]
-        if random.random() < epsilon:
-            # List of non-optimal actions, removing the best action
-            non_optimal_actions = [a for a in range(action_space_dim) if a != best_action]
-            # Select randomly
-            action = random.choice(non_optimal_actions)
-        else:
-            # Select best action
-            action = best_action
-        return torch.tensor([[action]], device=device, dtype=torch.long)
