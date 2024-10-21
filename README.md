@@ -1,12 +1,29 @@
-# Iterative-Intelligent-Sampling
+<div align="center">
+  
+# Recurrent DQN for Radio Fingerprinting <br /> with Constrained Measurements Collection
 
 [Nicola Novello](https://scholar.google.com/citations?user=4PPM0GkAAAAJ&hl=en) and [Andrea M. Tonello](https://scholar.google.com/citations?user=qBiseEsAAAAJ&hl=en)
 
+</div>
+
 Official repository of the paper "Recurrent DQN for Radio Fingerprinting with Constrained Measurements Collection" published at ICT Express (2024). 
+
+> Reinforcement Learning based algorithm to intelligently collect measurements for radio fingerprinting localization in indoor environments.
 
 ---
 
-## How to run the code
+# 📈 Important results from our paper
+
+## Architecture
+<img src="Figures/diagram_DRQN_architecture.png"/>
+
+## Example of path
+1st Iter.             |  2nd Iter.  
+:-------------------------:|:-------------------------:
+![](https://github.com/nicolaNovello/Iterative-Intelligent-Sampling/blob/main/Figures/RL_path1.png)  |  ![](https://github.com/nicolaNovello/Iterative-Intelligent-Sampling/blob/main/Figures/RL_path2.png)
+---
+
+# 💻 How to run the code
 
 The folder where the code is located must contain a folder `NetsImages` comprising the following folders: 
 - `Datasets` containing the RSSI dataframe obtained after interpolation of the dataset in [https://github.com/beaugunderson/wifi-heatmap](https://github.com/beaugunderson/wifi-heatmap) and the initial training datasets randomly extracted from the same dataset
@@ -21,9 +38,9 @@ The file `main.py` runs the experiments, while `main_functions.py`, `classes.py`
 
 ---
 
-## References and Acknowledgments
+## 📝 References
 
-If you use your code for your research, please cite our paper:
+If you use the code for your research, please cite our paper:
 ```
 @article{novello2024recurrent,
   title={Recurrent DQN for radio fingerprinting with constrained measurements collection},
@@ -33,6 +50,8 @@ If you use your code for your research, please cite our paper:
   publisher={Elsevier}
 }
 ```
+## 📋 Acknowledgments
+
 The implementation is based on / inspired by:
 
 - [https://github.com/beaugunderson/wifi-heatmap](https://github.com/beaugunderson/wifi-heatmap)
@@ -41,6 +60,6 @@ The implementation is based on / inspired by:
 
 ---
 
-## Contact
+## 📧 Contact
 
 [nicola.novello@aau.at](nicola.novello@aau.at)
