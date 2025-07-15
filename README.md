@@ -41,7 +41,7 @@ The file `main.py` runs the experiments, while `main_functions.py`, `classes.py`
 ## 📝 References
 
 If you use the code for your research, please cite our paper:
-```
+```bibtex
 @article{novello2024recurrent,
   title={Recurrent DQN for radio fingerprinting with constrained measurements collection},
   author={Novello, Nicola and Tonello, Andrea M},
