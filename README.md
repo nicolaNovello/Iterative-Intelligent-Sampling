@@ -6,7 +6,7 @@
 
 </div>
 
-Official repository of the paper "Recurrent DQN for Radio Fingerprinting with Constrained Measurements Collection" published at ICT Express (2024). 
+Official repository of the paper "Recurrent DQN for Radio Fingerprinting with Constrained Measurements Collection" published at ICT Express (2025). 
 
 > Reinforcement Learning based algorithm to intelligently collect measurements for radio fingerprinting localization in indoor environments.
 
@@ -42,13 +42,17 @@ The file `main.py` runs the experiments, while `main_functions.py`, `classes.py`
 
 If you use the code for your research, please cite our paper:
 ```bibtex
-@article{novello2024recurrent,
+@article{novello2025recurrent,
   title={Recurrent DQN for radio fingerprinting with constrained measurements collection},
   author={Novello, Nicola and Tonello, Andrea M},
   journal={ICT Express},
-  year={2024},
+  volume={11},
+  number={1},
+  pages={13--18},
+  year={2025},
   publisher={Elsevier}
 }
+
 ```
 ## 📋 Acknowledgments
 
